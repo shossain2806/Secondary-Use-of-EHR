@@ -1,0 +1,63 @@
+install.packages("pacman")
+
+require(pacman)  # Gives a confirmation message.
+library(pacman)  # No message.
+
+
+
+pacman::p_load(pacman, dplyr, tidyr, stringr, ggplot2, rmarkdown, odbc, DBI, tidyverse, kableExtra) 
+
+
+knitr::opts_chunk$set(message=F,
+                      warning=F,
+                      fig.width=6, 
+                      fig.height=3)
+                      
+
+
+```{r db_connection}
+myconn <- DBI::dbConnect(drv = odbc::odbc(),
+                         dsn = Sys.getenv("ODBC_DSN_NAME"),
+                         uid = Sys.getenv("SNOWFLAKE_USER"), # yozzzu may also leave the user_id empty if using Shibboleth
+                         pwd = Sys.getenv("SNOWFLAKE_PWD")   # you may also leave the password empty if using Shibboleth
+                         )
+```
+
+data<-dbGetQuery(myconn,
+                 "select * from HRM_INIT")
+                 
+``` {r}
+ggplot(data=data,aes(x=RACE)) +
+  geom_bar()
+  
+```
+
+
+``` {r}
+ggplot(data %>% group_by(SEX) %>%
+         dplyr::summarize(freq=n()) %>% ungroup, 
+       aes(x="",y=freq,fill=SEX)) +
+  geom_bar(width=1,stat="identity")+
+  coord_polar("y", start=0)+
+  labs(x="",y="")
+  
+```
+```{r}
+#summary descriptive stat TOTAL_MEDICATION_TYPE
+summary(data$TOTAL_MEDICATION_TYPE)
+```
+```{r}
+#summary descriptive stat DEATH_AFTER_FIRST_DOSE
+ggplot(data %>% group_by(IS_DEAD) %>%
+         dplyr::summarize(freq=n()) %>% ungroup, 
+       aes(x="",y=freq,fill=IS_DEAD)) +
+  geom_bar(width=1,stat="identity")+
+  coord_polar("y", start=0)+
+  labs(x="",y="")
+```
+
+```{r}
+#summary descriptive stat DEATH_AFTER_FIRST_DOSE
+aset<-data[data$IS_DEAD == '1' & data$DEATH_AFTER_FIRST_DOSE >= 0,] 
+summary(aset$DEATH_AFTER_FIRST_DOSE)
+```
